@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal de Feedback - Cluster Kubernetes</title>
+    
+    <!-- Meta Tags SEO -->
+    <meta name="description" content="Portal de Feedback demonstrativo rodando em cluster Kubernetes distribuído com Backend em PHP e Banco de Dados MySQL.">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Fontes do Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- Folha de Estilo Customizada -->
+    <link rel="stylesheet" href="css.css">
+</head>
+<body>
+    <!-- Efeitos de Fundo Decorativos (Orbs Neon Glow) -->
+    <div class="background-orbs" aria-hidden="true">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-purple"></div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <span class="kube-icon" aria-hidden="true">⎈</span>
+                <h1>Portal de Feedback</h1>
+            </div>
+            <p class="subtitle">Infraestrutura Distribuída rodando em Pods Replicados no Kubernetes</p>
+        </header>
+
+        <main class="grid-layout">
+            <!-- Card de Envio de Mensagem -->
+            <section class="card glass" id="form-section">
+                <h2>Enviar Mensagem</h2>
+                <form id="feedback-form">
+                    <div class="form-group">
+                        <label for="nome">Nome Completo</label>
+                        <input type="text" id="nome" name="nome" required placeholder="Digite seu nome completo" autocomplete="name">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Endereço de E-mail</label>
+                        <input type="email" id="email" name="email" required placeholder="exemplo@dominio.com" autocomplete="email">
+                    </div>
+                    <div class="form-group">
+                        <label for="comentario">Comentário / Mensagem</label>
+                        <textarea id="comentario" name="comentario" required placeholder="Escreva seu comentário aqui..." rows="4"></textarea>
+                    </div>
+                    <button type="submit" id="btn-submit" class="btn-gradient">
+                        <span>Enviar Mensagem</span>
+                        <span class="btn-icon" aria-hidden="true">➔</span>
+                    </button>
+                </form>
+            </section>
+
+            <!-- Card de Visualização de Mensagens -->
+            <section class="card glass" id="comments-section">
+                <div class="card-header">
+                    <h2>Mensagens Enviadas</h2>
+                    <span class="badge" id="message-count" aria-live="polite">0</span>
+                </div>
+                
+                <!-- Container de comentários dinâmicos -->
+                <div class="comments-container" id="comments-container">
+                    <div class="loading" id="loading-spinner">
+                        <div class="spinner" aria-hidden="true"></div>
+                        <p>Carregando comentários do cluster...</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <!-- Configuração manual do Endpoint da API (útil para desenvolvimento local/file://) -->
+            <div class="api-settings">
+                <label for="api-url">API Endpoint:</label>
+                <input type="text" id="api-url" placeholder="http://[LOAD_BALANCER_IP]">
+                <button type="button" id="btn-save-api" class="btn-secondary">Salvar URL</button>
+            </div>
+            <p>&copy; 2026 - Kubernetes Projeto 1. Padrão de Arquitetura DevOps - DIO.</p>
+        </footer>
+    </div>
+    
+    <!-- Script de lógica assíncrona -->
+    <script src="js.js"></script>
+</body>
+</html>

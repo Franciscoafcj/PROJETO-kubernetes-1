@@ -1,0 +1,35 @@
+# ==============================================================================
+# MANIFESTO KUBERNETES - NETWORK SERVICES
+# Projeto 1: Deploy de Aplicação Distribuída (DIO)
+# ==============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-service
+  labels:
+    app: mysql
+spec:
+  type: ClusterIP  # Apenas acessível internamente dentro do cluster por segurança
+  ports:
+    - port: 3306
+      targetPort: 3306
+  selector:
+    app: mysql  # Roteia o tráfego para os pods marcados com a label 'app: mysql'
+---
+# ------------------------------------------------------------------------------
+# SERVIÇO: BACKEND (LOAD BALANCER)
+# ------------------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  labels:
+    app: backend
+spec:
+  type: LoadBalancer  # Cria um IP público externo e distribui a carga de rede
+  ports:
+    - port: 80         # Porta exposta externamente
+      targetPort: 80   # Porta alvo no container
+      protocol: TCP
+  selector:
+    app: backend  # Roteia o tráfego para os pods marcados com a label 'app: backend'
