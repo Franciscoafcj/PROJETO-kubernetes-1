@@ -1,0 +1,23 @@
+stages:
+  - lint
+  - validate
+
+# Lint YAML files for syntax formatting
+lint-yaml:
+  stage: lint
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache python3 py3-pip
+    - pip3 install yamllint --break-system-packages
+  script:
+    - yamllint TESTE-VHL-SISTEMAS/k8s/
+
+# Dry-run validation of Kubernetes manifests using kubectl
+validate-k8s:
+  stage: validate
+  image: lachlanevenson/k8s-kubectl:v1.28.2
+  script:
+    - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/secrets.yml
+    - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/volumes.yml
+    - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/mysql.yml
+    - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/app.yml

@@ -1,0 +1,136 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+# ==============================================================================
+# VAGRANTFILE - Cluster Kubernetes Local com K3s (2 VMs)
+# Teste VHL Sistemas
+# ==============================================================================
+
+MASTER_IP = "192.168.56.10"
+WORKER_IP = "192.168.56.11"
+VM_MEMORY = "2048"
+VM_CPUS = 2
+
+# Script de instalação do K3s SERVER (Master)
+$master_script = <<-SHELL
+  set -e
+  echo "=========================================="
+  echo " Instalando K3s Server (Master)..."
+  echo "=========================================="
+
+  swapoff -a
+  sed -i '/ swap / s/^/#/' /etc/fstab
+
+  export INSTALL_K3S_EXEC="server --write-kubeconfig-mode 644 --node-ip #{MASTER_IP} --flannel-iface enp0s8 --tls-san #{MASTER_IP}"
+  curl -sfL https://get.k3s.io | sh -
+
+  echo "Aguardando o K3s Server inicializar..."
+  for i in $(seq 1 60); do
+    if [ -f /var/lib/rancher/k3s/server/node-token ] && [ -f /etc/rancher/k3s/k3s.yaml ]; then
+      echo "K3s Server pronto apos $((i*2)) segundos."
+      break
+    fi
+    echo "  Tentativa $i/60..."
+    sleep 2
+  done
+
+  if [ ! -f /var/lib/rancher/k3s/server/node-token ]; then
+    echo "Token nao gerado. Reiniciando K3s..."
+    systemctl restart k3s.service
+    sleep 30
+    if [ ! -f /var/lib/rancher/k3s/server/node-token ]; then
+      echo "ERRO FATAL: K3s nao conseguiu inicializar."
+      exit 1
+    fi
+  fi
+
+  cp /var/lib/rancher/k3s/server/node-token /vagrant/node-token
+  cp /etc/rancher/k3s/k3s.yaml /vagrant/kubeconfig.yaml
+  sed -i "s/127.0.0.1/#{MASTER_IP}/g" /vagrant/kubeconfig.yaml
+
+  echo "Aguardando node ficar Ready..."
+  for i in $(seq 1 30); do
+    if kubectl get nodes 2>/dev/null | grep -q " Ready"; then
+      echo "Node master Ready!"
+      break
+    fi
+    sleep 5
+  done
+
+  kubectl get nodes
+  echo "=========================================="
+  echo " K3s Server instalado com sucesso!"
+  echo "=========================================="
+SHELL
+
+# Script de instalação do K3s AGENT (Worker)
+$worker_script = <<-SHELL
+  set -e
+  echo "=========================================="
+  echo " Instalando K3s Agent (Worker)..."
+  echo "=========================================="
+
+  swapoff -a
+  sed -i '/ swap / s/^/#/' /etc/fstab
+
+  echo "Aguardando token do Master..."
+  for i in $(seq 1 60); do
+    if [ -f /vagrant/node-token ]; then
+      echo "Token encontrado!"
+      break
+    fi
+    if [ "$i" -eq 60 ]; then
+      echo "ERRO: Token nao encontrado."
+      exit 1
+    fi
+    sleep 2
+  done
+
+  K3S_TOKEN=$(cat /vagrant/node-token)
+  export K3S_URL="https://#{MASTER_IP}:6443"
+  export K3S_TOKEN="$K3S_TOKEN"
+  export INSTALL_K3S_EXEC="agent --node-ip #{WORKER_IP} --flannel-iface enp0s8"
+  curl -sfL https://get.k3s.io | sh -
+
+  echo "=========================================="
+  echo " K3s Agent instalado e conectado!"
+  echo "=========================================="
+SHELL
+
+Vagrant.configure("2") do |config|
+
+  config.vm.box = "ubuntu/jammy64"
+  # Aumenta o timeout de boot para 10 minutos
+  config.vm.boot_timeout = 600
+
+  # VM 1: MASTER
+  config.vm.define "vhl-master" do |master|
+    master.vm.hostname = "vhl-master"
+    master.vm.network "private_network", ip: MASTER_IP
+
+    master.vm.provider "virtualbox" do |vb|
+      vb.name = "vhl-master"
+      vb.memory = VM_MEMORY
+      vb.cpus = VM_CPUS
+      # Mostra a interface gráfica da VM para diagnosticar problemas de boot
+      vb.gui = true
+    end
+
+    master.vm.provision "shell", inline: $master_script
+  end
+
+  # VM 2: WORKER
+  config.vm.define "vhl-worker" do |worker|
+    worker.vm.hostname = "vhl-worker"
+    worker.vm.network "private_network", ip: WORKER_IP
+
+    worker.vm.provider "virtualbox" do |vb|
+      vb.name = "vhl-worker"
+      vb.memory = VM_MEMORY
+      vb.cpus = VM_CPUS
+      vb.gui = true
+    end
+
+    worker.vm.provision "shell", inline: $worker_script
+  end
+
+end

@@ -1,0 +1,19 @@
+# ==============================================================================
+# PERSISTENT VOLUME CLAIM - Armazenamento Persistente para o MySQL
+# Teste VHL Sistemas
+#
+# O K3s já inclui o "Local Path Provisioner" como StorageClass padrão,
+# então basta criar o PVC e o volume será provisionado automaticamente.
+# ==============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  labels:
+    app: mysql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
