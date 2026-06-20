@@ -21,12 +21,13 @@ Foi construída uma arquitetura de infraestrutura local de alta disponibilidade 
 ```
 
 ### Componentes Principais
-*   **Virtualização:** 2 Máquinas Virtuais gerenciadas pelo Vagrant (Ubuntu Jammy).
-    *   `vhl-master` (IP `192.168.56.10`): Control Plane do cluster.
-    *   `vhl-worker` (IP `192.168.56.11`): Nó de execução dos pods.
+*   **Virtualização & Topologia de VMs:** 2 Máquinas Virtuais gerenciadas pelo Vagrant (Ubuntu 22.04 Jammy) separando as camadas de gerência e execução:
+    *   `vhl-master` (IP `192.168.56.10` - 2 vCPUs, 2GB RAM): **Nó Control Plane (Master)**. O objetivo desta VM é coordenar o estado geral do cluster. Ela roda a API do Kubernetes (`kube-apiserver`), o gerenciador de estado (`kube-controller-manager`), o agendador de recursos (`kube-scheduler`) e o banco de dados interno de configuração (Kine/SQLite no K3s). Ela serve como console central de administração, recebendo os comandos do `kubectl` e decidindo onde alocar os pods.
+    *   `vhl-worker` (IP `192.168.56.11` - 2 vCPUs, 2GB RAM): **Nó de Execução (Worker / Agent)**. O objetivo desta VM é executar as cargas de trabalho reais (workloads). Ela executa o agente `kubelet` que reporta a saúde da VM para o master, o runtime de containers (`containerd`) e o roteador de rede (`kube-proxy`). Ela roda fisicamente os pods da aplicação, do banco de dados e do Zabbix, garantindo que os containers tenham os recursos físicos de CPU/RAM para operar.
 *   **Orquestração:** Cluster Kubernetes utilizando **K3s** (distribuição leve e certificada pela CNCF).
 *   **Banco de Dados:** MySQL 8.0 com armazenamento persistente local (`Local Path Provisioner` do K3s) persistido através de `PersistentVolumeClaim`.
 *   **Aplicação:** Web server Apache executando PHP 8.1 pré-compilado com a extensão `pdo_mysql`, com 3 réplicas para balanceamento de carga.
+*   **Monitoramento & Alertas (Observabilidade):** Zabbix Appliance implantado no namespace `monitoring` consolidando o Zabbix Server, banco de dados local e o Frontend Web em um único container leve. A interface do Zabbix é exposta via NodePort na porta `30080` (credenciais padrão: `Admin` / `zabbix`).
 
 ---
 
@@ -76,16 +77,24 @@ vagrant ssh vhl-master
 #### Passo 2.4: Aplicar os Manifestos do Kubernetes
 Dentro do terminal da VM Master, aplique os arquivos de configuração que estão mapeados na pasta `/vagrant`:
 ```bash
+# Manifestos Base da Aplicação
 sudo kubectl apply -f /vagrant/k8s/secrets.yml
 sudo kubectl apply -f /vagrant/k8s/volumes.yml
 sudo kubectl apply -f /vagrant/k8s/mysql.yml
 sudo kubectl apply -f /vagrant/k8s/app.yml
+
+# Manifesto de Observabilidade (Monitoramento e Alertas Zabbix)
+sudo kubectl apply -f /vagrant/k8s/monitoring/zabbix.yml
 ```
 
 #### Passo 2.5: Validar a Inicialização
-Acompanhe os pods até que todos estejam no status `1/1 READY`:
+Acompanhe os pods até que todos estejam no status `1/1 READY` nos namespaces `default` e `monitoring`:
 ```bash
-sudo kubectl get pods -w
+# Validando aplicação e banco
+sudo kubectl get pods -n default -w
+
+# Validando monitoramento
+sudo kubectl get pods -n monitoring
 ```
 *Nota: Na primeira execução, o MySQL pode demorar de 1 a 2 minutos gravando seus metadados iniciais antes de ficar pronto.*
 
@@ -94,6 +103,15 @@ Abra o navegador no seu computador host (Windows) e acesse:
 👉 **[http://192.168.56.10:30001](http://192.168.56.10:30001)**
 
 Insira uma mensagem de teste e clique em enviar para validar a persistência no banco de dados.
+
+#### Passo 2.7: Acessar o Painel de Monitoramento (Zabbix)
+Para acessar o painel de monitoramento do Zabbix, abra no navegador do seu computador host:
+👉 **[http://192.168.56.10:30080](http://192.168.56.10:30080)**
+
+*   **Usuário padrão:** `Admin`
+*   **Senha padrão:** `zabbix`
+
+*(Dentro do Zabbix, você pode cadastrar a URL `http://app-service.default.svc.cluster.local` em um cenário web para testar a disponibilidade do frontend e backend. As regras de alertas básicas já vêm ativas por padrão).*
 
 ---
 
@@ -107,6 +125,7 @@ Insira uma mensagem de teste e clique em enviar para validar a persistência no 
     *   `readinessProbe`: Testa o arquivo dinâmico `/index.php` (conexão com o banco). Se o MySQL estiver fora do ar, o pod PHP permanece vivo, mas deixa de receber tráfego de usuários até a conexão se restabelecer.
 *   **Estratégia de Deploy `Recreate` para MySQL:** O K3s usa volumes do tipo `ReadWriteOnce`. Na atualização de deployments, o Kubernetes tenta subir o pod novo antes de desligar o antigo. Usando a estratégia `Recreate`, garantimos que o pod antigo libere o disco antes que o novo tente montá-lo, evitando travamentos de volume travado.
 *   **Raciocínio de não usar Terraform/Ansible:** Decidiu-se manter o provisionamento centralizado no `Vagrantfile` via shell script. O uso de Terraform local exigiria a instalação de binários adicionais e o uso de providers do VirtualBox instáveis mantidos pela comunidade. O Vagrant resolve a infraestrutura local em um único arquivo limpo e nativo.
+*   **Escolha do Zabbix para Observabilidade:** Como eu trabalho e utilizo o Zabbix no meu trabalho atual, pela ambientação foi o que mais me encaixou para a parte de monitoramento. Essa familiaridade facilitou a implantação rápida do Zabbix Appliance (consolidando o Server, banco e web em um único pod) e a configuração do cenário de teste web para validar a aplicação de ponta a ponta.
 
 ---
 
@@ -176,3 +195,51 @@ Aqui estão descritas de forma simples e humanizada as principais dificuldades e
 | Password | `Senha@App456` |
 
 > Todas as credenciais são mantidas de forma segura através do Kubernetes Secrets (codificadas em Base64).
+
+---
+
+## 6. Configuração e Uso do Zabbix (Observabilidade)
+
+Para comprovar a coleta de métricas e alertas ativos (item complementar do teste), implantamos o **Zabbix Appliance** no cluster. Siga o passo a passo a seguir para configurar e verificar o monitoramento da aplicação.
+
+### Passo 6.1: Acessar a Interface do Zabbix
+Abra o navegador no seu host Windows e acesse:  
+👉 **[http://192.168.56.10:30080](http://192.168.56.10:30080)**  
+*   **Usuário padrão:** `Admin`  
+*   **Senha padrão:** `zabbix`
+
+### Passo 6.2: Desativar Alertas de Auto-Monitoramento
+Como o Zabbix Appliance não roda o daemon local do Zabbix Agent por padrão, o Zabbix Server acusará um alerta de indisponibilidade de agente para si mesmo no dashboard principal. Para limpar o painel:
+1. No menu superior/lateral, vá em **Configuration** (Configuração) ➡️ **Hosts**.
+2. Localize a linha do host **`Zabbix server`**.
+3. Na coluna **Status**, clique no link verde **Enabled** (Ativo) para alterá-lo para **Disabled** (Inativo/Vermelho).
+4. O painel principal (Global View) ficará 100% limpo de problemas.
+
+### Passo 6.3: Criar o Host da Aplicação Portal Web
+1. No menu **Configuration** ➡️ **Hosts**, clique no botão **Create host** (Criar host) no canto superior direito.
+2. Preencha os campos obrigatórios:
+   * **Host name:** `Portal Web VHL`
+   * **Templates:** Clique em *Select* (Selecionar), procure e marque o template **`Template App HTTP Service`** (destacado na popup de templates) e clique em *Select*.
+   * **Groups:** Clique em *Select*, marque o grupo **`Virtual machines`** e confirme.
+   * **Interfaces:** Clique em *Add*, selecione *Agent* e configure com o IP padrão `127.0.0.1` na porta `10050`.
+3. Clique em **Add** (Adicionar) no final da página para salvar.
+
+### Passo 6.4: Criar o Cenário de Teste Web (Web Scenario)
+Dessa forma o Zabbix fará requisições HTTP reais de dentro do cluster simulando o usuário, testando o PHP e a conexão com o banco MySQL:
+1. Na lista de Hosts, na linha do host `Portal Web VHL`, clique em **Web** (Cenários Web).
+2. Clique em **Create web scenario** (Criar cenário web) no canto superior direito.
+3. Na aba **Scenario**, configure:
+   * **Name:** `Acesso Portal`
+   * **Update interval:** `1m`
+4. Na aba **Steps** (Passos), clique em **Add** (Adicionar) e configure o passo:
+   * **Name:** `Home Page`
+   * **URL:** `http://app-service.default.svc.cluster.local/index.php` *(DNS interno do serviço Kubernetes)*
+   * **Required status codes:** `200` *(Força o Zabbix a acusar erro caso o PHP retorne HTTP 500 se o MySQL cair)*
+   * Clique em **Add** no modal do passo.
+5. Clique em **Add** no rodapé do formulário principal do cenário para salvar.
+
+### Passo 6.5: Visualizar Gráficos e Coleta de Métricas
+Para visualizar as métricas coletadas em tempo real:
+1. No menu superior horizontal, clique em **Monitoring** (Monitoramento) ➡️ **Web**.
+2. Clique no nome do cenário **`Portal Web VHL`**.
+3. A tela exibirá a resposta HTTP `200 OK` e os gráficos de tempo de resposta e velocidade de download.
