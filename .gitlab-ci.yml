@@ -12,10 +12,12 @@ lint-yaml:
   script:
     - 'yamllint -d "{rules: {line-length: disable, document-start: disable}}" TESTE-VHL-SISTEMAS/k8s/'
 
-# Dry-run validation of Kubernetes manifests using kubectl
+# Dry-run validation of Kubernetes manifests using kubectl (overriding entrypoint to allow shell script execution)
 validate-k8s:
   stage: validate
-  image: registry.k8s.io/kubectl:v1.28.2
+  image:
+    name: registry.k8s.io/kubectl:v1.28.2
+    entrypoint: [""]
   script:
     - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/secrets.yml
     - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/volumes.yml
