@@ -24,3 +24,4 @@ validate-k8s:
     - kubeconform -summary -strict TESTE-VHL-SISTEMAS/k8s/volumes.yml
     - kubeconform -summary -strict TESTE-VHL-SISTEMAS/k8s/mysql.yml
     - kubeconform -summary -strict TESTE-VHL-SISTEMAS/k8s/app.yml
+    - kubeconform -summary -strict TESTE-VHL-SISTEMAS/k8s/monitoring/zabbix.yml

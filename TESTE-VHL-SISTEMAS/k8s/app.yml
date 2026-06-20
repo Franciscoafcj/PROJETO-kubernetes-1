@@ -2,9 +2,9 @@
 # DEPLOYMENT & SERVICE - Aplicação PHP (Frontend + Backend)
 # Teste VHL Sistemas
 #
-# Estratégia: Usamos a imagem oficial php:8.1-apache e injetamos o código
-# via ConfigMap. Assim não precisamos buildar/pushear imagens customizadas.
-# O container roda um initContainer para instalar a extensão pdo_mysql.
+# Estratégia: Usamos a imagem chialab/php:8.1-apache e injetamos o código
+# via ConfigMap. Assim não precisamos de initContainer para instalar a extensão
+# pdo_mysql nem de buildar/pushear imagens customizadas.
 # ==============================================================================
 
 # ConfigMap com o código PHP do Backend
