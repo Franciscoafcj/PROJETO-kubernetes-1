@@ -149,6 +149,21 @@ Aqui estão descritas de forma simples e humanizada as principais dificuldades e
 *   **Por que deu problema?** Havia arquivos de deploys anteriores corrompidos no disco virtual. O MySQL pulou a inicialização dos dados e não criou o usuário `user_app` com permissões de rede.
 *   **Como corrigi:** Excluí o PVC anterior e limpei o diretório físico, forçando o MySQL a realizar uma instalação limpa onde criou o usuário e senhas com permissões de rede corretas.
 
+### 4.8 Erro de sintaxe YAML no `.gitlab-ci.yml` (`did not find expected key while parsing a block mapping`)
+*   **O que tentei fazer primeiro:** Configurei a chamada do `yamllint` passando as regras inline no formato JSON: `yamllint -d "{rules: {line-length: disable, document-start: disable}}"`.
+*   **Por que deu problema?** O analisador de YAML do GitLab se confundiu com os caracteres de chaves `{}` do comando inline do shell, achando que eram blocos de mapeamento estruturais do próprio arquivo de pipeline, travando o parser.
+*   **Como corrigi:** Envolvi toda a linha do comando em aspas simples (`'...'`), fazendo com que o analisador interprete a linha como uma string de texto contínua.
+
+### 4.9 Erro de falta de shell na imagem oficial do kubectl (`exec: "sh": executable file not found in $PATH`)
+*   **O que tentei fazer primeiro:** Usei a imagem oficial `registry.k8s.io/kubectl:v1.28.2` no runner da pipeline para rodar as validações.
+*   **Por que deu problema?** A imagem oficial é do tipo "distroless" (construída apenas com o binário compilado e sem sistema operacional base). Como ela não possui um shell (como `/bin/sh` ou `bash`), o GitLab Runner falhou ao tentar iniciar a etapa de script que executa os comandos de validação.
+*   **Como corrigi:** Alterei a imagem base do job para `alpine:latest` (que possui shell nativo) e fiz o download dinâmico do executável oficial do `kubectl` usando o `curl` no `before_script`.
+
+### 4.10 Erro de conexão recusada do kubectl na pipeline (`localhost:8080 was refused`)
+*   **O que tentei fazer primeiro:** Executei `kubectl apply --dry-run=client -f <arquivo>` para testar a validade dos manifestos de forma estática.
+*   **Por que deu problema?** Mesmo especificando o dry-run no lado do cliente, o `kubectl` tenta por padrão contactar o servidor do API do Kubernetes para buscar o esquema OpenAPI para validação de campos. Como o container do runner do GitLab está offline e sem um cluster Kubernetes rodando dentro dele, o comando falhou por conexão recusada.
+*   **Como corrigi:** Adicionei a flag `--validate=false` aos comandos, instruindo o `kubectl` a verificar somente a estrutura gramatical e a lógica do manifesto local sem tentar alcançar o cluster.
+
 ---
 
 ## 5. Credenciais do Banco de Dados
