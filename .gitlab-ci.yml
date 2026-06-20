@@ -12,7 +12,7 @@ lint-yaml:
   script:
     - 'yamllint -d "{rules: {line-length: disable, document-start: disable}}" TESTE-VHL-SISTEMAS/k8s/'
 
-# Dry-run validation of Kubernetes manifests (using alpine and downloading kubectl to avoid distroless image limitations)
+# Dry-run validation of Kubernetes manifests (using alpine and disabling schema validation to run offline)
 validate-k8s:
   stage: validate
   image: alpine:latest
@@ -22,7 +22,7 @@ validate-k8s:
     - chmod +x kubectl
     - mv kubectl /usr/local/bin/
   script:
-    - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/secrets.yml
-    - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/volumes.yml
-    - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/mysql.yml
-    - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/app.yml
+    - kubectl apply --dry-run=client --validate=false -f TESTE-VHL-SISTEMAS/k8s/secrets.yml
+    - kubectl apply --dry-run=client --validate=false -f TESTE-VHL-SISTEMAS/k8s/volumes.yml
+    - kubectl apply --dry-run=client --validate=false -f TESTE-VHL-SISTEMAS/k8s/mysql.yml
+    - kubectl apply --dry-run=client --validate=false -f TESTE-VHL-SISTEMAS/k8s/app.yml
