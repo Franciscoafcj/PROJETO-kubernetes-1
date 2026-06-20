@@ -15,7 +15,7 @@ lint-yaml:
 # Dry-run validation of Kubernetes manifests using kubectl
 validate-k8s:
   stage: validate
-  image: lachlanevenson/k8s-kubectl:v1.28.2
+  image: registry.k8s.io/kubectl:v1.28.2
   script:
     - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/secrets.yml
     - kubectl apply --dry-run=client -f TESTE-VHL-SISTEMAS/k8s/volumes.yml
