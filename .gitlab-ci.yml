@@ -10,7 +10,7 @@ lint-yaml:
     - apk add --no-cache python3 py3-pip
     - pip3 install yamllint --break-system-packages
   script:
-    - yamllint -d "{rules: {line-length: disable, document-start: disable}}" TESTE-VHL-SISTEMAS/k8s/
+    - 'yamllint -d "{rules: {line-length: disable, document-start: disable}}" TESTE-VHL-SISTEMAS/k8s/'
 
 # Dry-run validation of Kubernetes manifests using kubectl
 validate-k8s:
