@@ -243,3 +243,14 @@ Para visualizar as métricas coletadas em tempo real:
 1. No menu superior horizontal, clique em **Monitoring** (Monitoramento) ➡️ **Web**.
 2. Clique no nome do cenário **`Portal Web VHL`**.
 3. A tela exibirá a resposta HTTP `200 OK` e os gráficos de tempo de resposta e velocidade de download.
+
+---
+
+## 7. Apontamentos de Segurança (Apenas Teste)
+
+Este projeto contém práticas inadequadas para produção. Como o ambiente serve para testes locais, ignore estas pendências:
+
+* **Credenciais expostas:** O arquivo `secrets.yml` armazena senhas em Base64 e possui comentários com texto limpo.
+* **Privilégios elevados:** Os contêineres rodam como root devido à ausência de `securityContext`.
+* **Rede aberta:** A ausência de `NetworkPolicy` deixa o MySQL exposto a qualquer pod do cluster.
+* **Segurança no pipeline:** A esteira de CI/CD não executa varreduras de código ou de dependências (SAST e SCA).

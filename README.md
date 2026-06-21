@@ -205,3 +205,14 @@ Simula o acesso do usuário para validar o PHP e a conexão ao MySQL:
 
 ### 6.4 Visualização
 Acompanhe os gráficos e tempos de resposta em **Monitoring** > **Web** > **Portal Web VHL**.
+
+---
+
+## 7. Apontamentos de Segurança (Apenas Teste)
+
+Este projeto contém práticas inadequadas para produção. Como o ambiente serve para testes locais, ignore estas pendências:
+
+* **Credenciais expostas:** O arquivo `secrets.yml` armazena senhas em Base64 e possui comentários com texto limpo.
+* **Privilégios elevados:** Os contêineres rodam como root devido à ausência de `securityContext`.
+* **Rede aberta:** A ausência de `NetworkPolicy` deixa o MySQL exposto a qualquer pod do cluster.
+* **Segurança no pipeline:** A esteira de CI/CD não executa varreduras de código ou de dependências (SAST e SCA).
