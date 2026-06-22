@@ -133,52 +133,57 @@ Para acessar o painel de monitoramento do Zabbix, abra no navegador do seu compu
 
 Aqui estão descritas de forma simples e humanizada as principais dificuldades enfrentadas durante o desenvolvimento e como foram corrigidas:
 
-### 4.1 O travamento de boot (Timeout de SSH) nas VMs no Windows
+### 4.1 Erro de sintaxe/execução no Vagrantfile (Vagrant.configure no início)
+*   **O que tentei fazer primeiro:** Posicionei a chamada de configuração `Vagrant.configure("2") do |config|` no início do `Vagrantfile`.
+*   **Por que deu problema?** O comando `vagrant up` falhou imediatamente com um erro do interpretador Ruby (como `NameError: undefined local variable or method`), pois o bloco tentava usar variáveis como `MASTER_IP` e `$master_script` antes de terem sido declaradas.
+*   **Como corrigi:** Movi o bloco `Vagrant.configure` para o final do arquivo `Vagrantfile`, garantindo que todas as constantes de IP e os scripts Bash de provisionamento fossem declarados antes de serem consumidos pela configuração.
+
+### 4.2 O travamento de boot (Timeout de SSH) nas VMs no Windows
 *   **O que tentei fazer primeiro:** Iniciei o `vagrant up` para subir as VMs.
 *   **Por que deu problema?** O boot travou em `Waiting for machine to boot...` até dar timeout. Isso aconteceu porque o Windows estava com o Hyper-V (usado pelo WSL2/Docker Desktop) ativo. O VirtualBox rodando junto com o Hyper-V em processadores AMD Ryzen entra em modo NEM, tornando a emulação extremamente lenta e impedindo o boot do Linux.
 *   **Como corrigi:** Desativei o hypervisor executando `bcdedit /set hypervisorlaunchtype off` no PowerShell e reiniciando a máquina.
 
-### 4.2 A inicialização lenta do PHP (compilação sob demanda)
+### 4.3 A inicialização lenta do PHP (compilação sob demanda)
 *   **O que tentei fazer primeiro:** Usei um container de inicialização (`initContainer`) para compilar o driver MySQL na imagem base oficial do PHP Apache.
 *   **Por que deu problema?** O deploy demorava muito tempo e dependia de baixar pacotes da internet. Se a internet caísse, o pod entrava em erro de crash.
 *   **Como corrigi:** Mudei a imagem para `chialab/php:8.1-apache` que já possui os drivers pré-instalados.
 
-### 4.3 Loop de reinício do PHP se o banco caísse
+### 4.4 Loop de reinício do PHP se o banco caísse
 *   **O que tentei fazer primeiro:** Apontei a liveness probe para o `/index.php`.
 *   **Por que deu problema?** Como o index consulta o banco, se o MySQL demorasse a subir ou ficasse temporariamente fora do ar, a probe falhava e o Kubernetes reiniciava o container PHP em loop infinito.
 *   **Como corrigi:** Mudei a liveness probe para monitorar o `/index.html` estático e mantive a readiness probe no `/index.php`.
 
-### 4.4 Erro de diretório existente no VirtualBox (VERR_ALREADY_EXISTS)
+### 4.5 Erro de diretório existente no VirtualBox (VERR_ALREADY_EXISTS)
 *   **O que tentei fazer primeiro:** Rodei o comando `vagrant up`.
 *   **Por que deu problema?** O VirtualBox falhou com o erro informando que o diretório da VM do worker já existia devido a uma criação anterior corrompida.
 *   **Como corrigi:** Removi manualmente a pasta `.\VirtualBox VMs\vhl-worker` no host Windows.
 
-### 4.5 Loop de reinício do MySQL no primeiro deploy
+### 4.6 Loop de reinício do MySQL no primeiro deploy
 *   **O que tentei fazer primeiro:** Configurei a liveness probe do MySQL para começar em 15 segundos.
 *   **Por que deu problema?** No primeiro deploy, o MySQL demora cerca de 1 a 2 minutos gravando as tabelas e arquivos do banco de dados na VM. A probe de 15 segundos falhava por não achar a porta aberta e reiniciava o MySQL antes que ele terminasse de criar os arquivos.
 *   **Como corrigi:** Aumentei o tempo de espera inicial (`initialDelaySeconds`) da liveness probe do MySQL para 180 segundos.
 
-### 4.6 Travamento de volume persistente (PVC) no update
+### 4.7 Travamento de volume persistente (PVC) no update
 *   **O que tentei fazer primeiro:** Executei atualização do manifesto do MySQL.
 *   **Por que deu problema?** O novo pod tentava ler o volume persistente enquanto o pod antigo ainda estava ativo e bloqueando o disco (ReadWriteOnce).
 *   **Como corrigi:** Alerei a estratégia de deploy do MySQL para `Recreate`.
 
-### 4.7 Erro de permissão ao banco (Host not allowed to connect)
+### 4.8 Erro de permissão ao banco (Host not allowed to connect)
 *   **O que tentei fazer primeiro:** Re-apliquei as configurações do MySQL mantendo os arquivos antigos do volume persistente.
 *   **Por que deu problema?** Havia arquivos de deploys anteriores corrompidos no disco virtual. O MySQL pulou a inicialização dos dados e não criou o usuário `user_app` com permissões de rede.
 *   **Como corrigi:** Excluí o PVC anterior e limpei o diretório físico, forçando o MySQL a realizar uma instalação limpa onde criou o usuário e senhas com permissões de rede corretas.
 
-### 4.8 Erro de sintaxe YAML no `.gitlab-ci.yml` (`did not find expected key while parsing a block mapping`)
+### 4.9 Erro de sintaxe YAML no `.gitlab-ci.yml` (`did not find expected key while parsing a block mapping`)
 *   **O que tentei fazer primeiro:** Configurei a chamada do `yamllint` passando as regras inline no formato JSON: `yamllint -d "{rules: {line-length: disable, document-start: disable}}"`.
 *   **Por que deu problema?** O analisador de YAML do GitLab se confundiu com os caracteres de chaves `{}` do comando inline do shell, achando que eram blocos de mapeamento estruturais do próprio arquivo de pipeline, travando o parser.
 *   **Como corrigi:** Envolvi toda a linha do comando em aspas simples (`'...'`), fazendo com que o analisador interprete a linha como uma string de texto contínua.
 
-### 4.9 Erro de falta de shell na imagem oficial do kubectl (`exec: "sh": executable file not found in $PATH`)
+### 4.10 Erro de falta de shell na imagem oficial do kubectl (`exec: "sh": executable file not found in $PATH`)
 *   **O que tentei fazer primeiro:** Usei a imagem oficial `registry.k8s.io/kubectl:v1.28.2` no runner da pipeline para rodar as validações.
 *   **Por que deu problema?** A imagem oficial é do tipo "distroless" (construída apenas com o binário compilado e sem sistema operacional base). Como ela não possui um shell (como `/bin/sh` ou `bash`), o GitLab Runner falhou ao tentar iniciar a etapa de script que executa os comandos de validação.
 *   **Como corrigi:** Alterei a imagem base do job para `alpine:latest` (que possui shell nativo) e fiz o download dinâmico do executável oficial do `kubectl` usando o `curl` no `before_script`.
 
-### 4.10 Erro de conexão recusada do kubectl na pipeline (`localhost:8080 was refused`)
+### 4.11 Erro de conexão recusada do kubectl na pipeline (`localhost:8080 was refused`)
 *   **O que tentei fazer primeiro:** Executei `kubectl apply --dry-run=client -f <arquivo>` para testar a validade dos manifestos de forma estática.
 *   **Por que deu problema?** Mesmo especificando o dry-run no lado do cliente, o `kubectl` tenta por padrão contactar o servidor do API do Kubernetes para buscar o esquema OpenAPI para validação de campos. Como o container do runner do GitLab está offline e sem um cluster Kubernetes rodando dentro dele, o comando falhou por conexão recusada.
 *   **Como corrigi:** Adicionei a flag `--validate=false` aos comandos, instruindo o `kubectl` a verificar somente a estrutura gramatical e a lógica do manifesto local sem tentar alcançar o cluster.

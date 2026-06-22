@@ -116,43 +116,47 @@ bcdedit /set hypervisorlaunchtype auto
 
 ## 4. Resolução de Problemas (Diário de Bordo)
 
-### 4.1 VMs travadas no boot (Timeout de SSH no Windows)
+### 4.1 Erro de sintaxe/execução no Vagrantfile (Vagrant.configure no início)
+*   **Problema:** Ao rodar `vagrant up`, o comando falhava imediatamente com um erro do interpretador Ruby indicando que as variáveis de IP ou os scripts de provisionamento não estavam definidos.
+*   **Solução:** O bloco `Vagrant.configure` estava localizado no início do arquivo. Como o Ruby é lido de cima para baixo, as constantes de IP e os scripts Bash precisam ser declarados primeiro. Movi o bloco `Vagrant.configure` para o final do `Vagrantfile`.
+
+### 4.2 VMs travadas no boot (Timeout de SSH no Windows)
 *   **Problema:** O comando `vagrant up` travava em `Waiting for machine to boot...` devido ao conflito entre VirtualBox e Hyper-V em processadores AMD Ryzen.
 *   **Solução:** Desativei o hypervisor temporariamente rodando `bcdedit /set hypervisorlaunchtype off` no PowerShell e reiniciando a máquina.
 
-### 4.2 Inicialização lenta do PHP (compilação sob demanda)
+### 4.3 Inicialização lenta do PHP (compilação sob demanda)
 *   **Problema:** Compilar o driver MySQL em tempo de execução via `initContainers` tornava o deploy demorado e suscetível a quedas de conexão externa.
 *   **Solução:** Substituí a imagem pela `chialab/php:8.1-apache`, que já traz as extensões necessárias pré-instaladas.
 
-### 4.3 Loop de reinício no PHP em caso de indisponibilidade do banco
+### 4.4 Loop de reinício no PHP em caso de indisponibilidade do banco
 *   **Problema:** A liveness probe testava `/index.php`. Se o MySQL demorasse para inicializar, a probe falhava e o Kubernetes reiniciava o container PHP em loop.
 *   **Solução:** Direcionei a liveness probe para o `/index.html` estático e mantive a readiness probe no `/index.php`.
 
-### 4.4 Erro VERR_ALREADY_EXISTS no VirtualBox
+### 4.5 Erro VERR_ALREADY_EXISTS no VirtualBox
 *   **Problema:** Arquivos de execuções anteriores corrompidos impediam a criação da VM do worker.
 *   **Solução:** Excluí manualmente a pasta `.\VirtualBox VMs\vhl-worker` no Windows.
 
-### 4.5 Loop de reinício do MySQL no primeiro deploy
+### 4.6 Loop de reinício do MySQL no primeiro deploy
 *   **Problema:** A liveness probe padrão de 15 segundos falhava porque o MySQL leva mais tempo para estruturar e gravar os arquivos iniciais no primeiro boot.
 *   **Solução:** Aumentei o `initialDelaySeconds` da liveness probe do MySQL para 180 segundos.
 
-### 4.6 Volume persistente travado (PVC) durante atualizações
+### 4.7 Volume persistente travado (PVC) durante atualizações
 *   **Problema:** Novos pods tentavam acessar o volume `ReadWriteOnce` enquanto o pod antigo ainda segurava a montagem do disco.
 *   **Solução:** Mudei a estratégia de deploy do MySQL para `Recreate`.
 
-### 4.7 Erro "Host not allowed to connect" no MySQL
+### 4.8 Erro "Host not allowed to connect" no MySQL
 *   **Problema:** Arquivos residuais no PVC impediam a inicialização correta dos dados do banco e a devida criação do usuário da aplicação.
 *   **Solução:** Excluí o PVC antigo e limpei o diretório local para forçar uma inicialização do zero.
 
-### 4.8 Erro de sintaxe YAML no `.gitlab-ci.yml`
+### 4.9 Erro de sintaxe YAML no `.gitlab-ci.yml`
 *   **Problema:** O GitLab se perdia com as chaves `{}` do comando inline do `yamllint` e interpretava a linha como um bloco estrutural do pipeline.
 *   **Solução:** Envolvi o comando inline em aspas simples (`'...'`).
 
-### 4.9 Falta de terminal na imagem oficial do kubectl
+### 4.10 Falta de terminal na imagem oficial do kubectl
 *   **Problema:** A imagem distroless do `kubectl` falhava no GitLab Runner por não possuir `/bin/sh` ou `bash`.
 *   **Solução:** Mudei a imagem base do job para `alpine:latest` e instalei o `kubectl` dinamicamente com `curl` no `before_script`.
 
-### 4.10 Conexão recusada do kubectl local na pipeline
+### 4.11 Conexão recusada do kubectl local na pipeline
 *   **Problema:** Mesmo com dry-run local (`--dry-run=client`), o `kubectl` tentava se comunicar com um cluster para validar o esquema de APIs.
 *   **Solução:** Adicionei a flag `--validate=false` para realizar apenas validações locais e isoladas do cluster.
 
