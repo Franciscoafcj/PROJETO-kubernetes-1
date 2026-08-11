@@ -1,0 +1,4 @@
+.vagrant/
+kubeconfig.yaml
+node-token
+*.log
