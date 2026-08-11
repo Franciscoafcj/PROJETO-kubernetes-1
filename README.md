@@ -1,4 +1,4 @@
-# Implantação de Cluster Kubernetes Local - VHL Sistemas
+# Implantação de Cluster Kubernetes Local
 
 Este projeto cria um ambiente Kubernetes local (K3s) contendo uma aplicação PHP conectada a um banco MySQL persistente.
 
@@ -22,8 +22,8 @@ O ambiente utiliza duas máquinas virtuais gerenciadas pelo Vagrant:
 
 ### Componentes
 
-*   `vhl-master` (`192.168.56.10` - 2 vCPUs, 2GB RAM): Nó Control Plane. Gerencia o cluster, responde a comandos do `kubectl` e define a alocação de recursos.
-*   `vhl-worker` (`192.168.56.11` - 2 vCPUs, 2GB RAM): Nó Worker. Executa os containers da aplicação, do banco de dados e do Zabbix.
+*   `k8s-master` (`192.168.56.10` - 2 vCPUs, 2GB RAM): Nó Control Plane. Gerencia o cluster, responde a comandos do `kubectl` e define a alocação de recursos.
+*   `k8s-worker` (`192.168.56.11` - 2 vCPUs, 2GB RAM): Nó Worker. Executa os containers da aplicação, do banco de dados e do Zabbix.
 *   **Orquestração:** K3s.
 *   **Banco de Dados:** MySQL 8.0 com armazenamento persistente local (`Local Path Provisioner`).
 *   **Aplicação:** PHP 8.1 (Apache) com 3 réplicas e conexão MySQL ativa.
@@ -61,7 +61,7 @@ bcdedit /set hypervisorlaunchtype auto
 1. Clone o repositório e acesse o diretório:
    ```powershell
    git clone <URL_DO_REPOSITORIO>
-   cd TESTE-VHL-SISTEMAS
+   cd LAB-KUBERNETES
    ```
 
 2. Inicie as máquinas virtuais:
@@ -72,7 +72,7 @@ bcdedit /set hypervisorlaunchtype auto
 
 3. Acesse a máquina master por SSH:
    ```powershell
-   vagrant ssh vhl-master
+   vagrant ssh k8s-master
    ```
 
 4. Aplique os manifestos do Kubernetes:
@@ -134,7 +134,7 @@ bcdedit /set hypervisorlaunchtype auto
 
 ### 4.5 Erro VERR_ALREADY_EXISTS no VirtualBox
 *   **Problema:** Arquivos de execuções anteriores corrompidos impediam a criação da VM do worker.
-*   **Solução:** Excluí manualmente a pasta `.\VirtualBox VMs\vhl-worker` no Windows.
+*   **Solução:** Excluí manualmente a pasta `.\VirtualBox VMs\k8s-worker` no Windows.
 
 ### 4.6 Loop de reinício do MySQL no primeiro deploy
 *   **Problema:** A liveness probe padrão de 15 segundos falhava porque o MySQL leva mais tempo para estruturar e gravar os arquivos iniciais no primeiro boot.
@@ -188,7 +188,7 @@ O Zabbix Server gera um alerta falso de agente indisponível porque o container 
 ### 6.2 Cadastro da Aplicação
 1. Acesse **Configuration** > **Hosts** e clique em **Create host**.
 2. Preencha os campos:
-   * **Host name:** `Portal Web VHL`
+   * **Host name:** `Portal Web App`
    * **Templates:** Escolha `Template App HTTP Service`.
    * **Groups:** Selecione `Virtual machines`.
    * **Interfaces:** Clique em **Add**, escolha **Agent**, mantenha `127.0.0.1` na porta `10050`.
@@ -196,7 +196,7 @@ O Zabbix Server gera um alerta falso de agente indisponível porque o container 
 
 ### 6.3 Criação do Cenário Web
 Simula o acesso do usuário para validar o PHP e a conexão ao MySQL:
-1. Na listagem de hosts, vá na linha do `Portal Web VHL` e selecione **Web**.
+1. Na listagem de hosts, vá na linha do `Portal Web App` e selecione **Web**.
 2. Clique em **Create web scenario**.
 3. Na guia **Scenario**:
    * **Name:** `Acesso Portal`
@@ -208,7 +208,7 @@ Simula o acesso do usuário para validar o PHP e a conexão ao MySQL:
 5. Salve o passo e o cenário.
 
 ### 6.4 Visualização
-Acompanhe os gráficos e tempos de resposta em **Monitoring** > **Web** > **Portal Web VHL**.
+Acompanhe os gráficos e tempos de resposta em **Monitoring** > **Web** > **Portal Web App**.
 
 ---
 

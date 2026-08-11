@@ -1,4 +1,4 @@
-# Teste Técnico DevOps - VHL Sistemas
+# Desafio Técnico DevOps
 
 O objetivo é implantar um ambiente local com um cluster Kubernetes funcional rodando uma aplicação PHP integrada a um banco de dados MySQL persistente.
 
@@ -22,8 +22,8 @@ Foi construída uma arquitetura de infraestrutura local de alta disponibilidade 
 
 ### Componentes Principais
 *   **Virtualização & Topologia de VMs:** 2 Máquinas Virtuais gerenciadas pelo Vagrant (Ubuntu 22.04 Jammy) separando as camadas de gerência e execução:
-    *   `vhl-master` (IP `192.168.56.10` - 2 vCPUs, 2GB RAM): **Nó Control Plane (Master)**. O objetivo desta VM é coordenar o estado geral do cluster. Ela roda a API do Kubernetes (`kube-apiserver`), o gerenciador de estado (`kube-controller-manager`), o agendador de recursos (`kube-scheduler`) e o banco de dados interno de configuração (Kine/SQLite no K3s). Ela serve como console central de administração, recebendo os comandos do `kubectl` e decidindo onde alocar os pods.
-    *   `vhl-worker` (IP `192.168.56.11` - 2 vCPUs, 2GB RAM): **Nó de Execução (Worker / Agent)**. O objetivo desta VM é executar as cargas de trabalho reais (workloads). Ela executa o agente `kubelet` que reporta a saúde da VM para o master, o runtime de containers (`containerd`) e o roteador de rede (`kube-proxy`). Ela roda fisicamente os pods da aplicação, do banco de dados e do Zabbix, garantindo que os containers tenham os recursos físicos de CPU/RAM para operar.
+    *   `k8s-master` (IP `192.168.56.10` - 2 vCPUs, 2GB RAM): **Nó Control Plane (Master)**. O objetivo desta VM é coordenar o estado geral do cluster. Ela roda a API do Kubernetes (`kube-apiserver`), o gerenciador de estado (`kube-controller-manager`), o agendador de recursos (`kube-scheduler`) e o banco de dados interno de configuração (Kine/SQLite no K3s). Ela serve como console central de administração, recebendo os comandos do `kubectl` e decidindo onde alocar os pods.
+    *   `k8s-worker` (IP `192.168.56.11` - 2 vCPUs, 2GB RAM): **Nó de Execução (Worker / Agent)**. O objetivo desta VM é executar as cargas de trabalho reais (workloads). Ela executa o agente `kubelet` que reporta a saúde da VM para o master, o runtime de containers (`containerd`) e o roteador de rede (`kube-proxy`). Ela roda fisicamente os pods da aplicação, do banco de dados e do Zabbix, garantindo que os containers tenham os recursos físicos de CPU/RAM para operar.
 *   **Orquestração:** Cluster Kubernetes utilizando **K3s** (distribuição leve e certificada pela CNCF).
 *   **Banco de Dados:** MySQL 8.0 com armazenamento persistente local (`Local Path Provisioner` do K3s) persistido através de `PersistentVolumeClaim`.
 *   **Aplicação:** Web server Apache executando PHP 8.1 pré-compilado com a extensão `pdo_mysql`, com 3 réplicas para balanceamento de carga.
@@ -58,7 +58,7 @@ Para que as máquinas virtuais não tenham travamentos de CPU (`soft lockup`), d
 Abra seu terminal e clone este repositório:
 ```powershell
 git clone <URL_DO_REPOSITORIO>
-cd "TESTE-VHL-SISTEMAS"
+cd "LAB-KUBERNETES"
 ```
 
 #### Passo 2.2: Subir as VMs com Vagrant
@@ -71,7 +71,7 @@ vagrant up
 #### Passo 2.3: Acessar a VM Master via SSH
 Acesse a console da VM controladora:
 ```powershell
-vagrant ssh vhl-master
+vagrant ssh k8s-master
 ```
 
 #### Passo 2.4: Aplicar os Manifestos do Kubernetes
@@ -156,7 +156,7 @@ Aqui estão descritas de forma simples e humanizada as principais dificuldades e
 ### 4.5 Erro de diretório existente no VirtualBox (VERR_ALREADY_EXISTS)
 *   **O que tentei fazer primeiro:** Rodei o comando `vagrant up`.
 *   **Por que deu problema?** O VirtualBox falhou com o erro informando que o diretório da VM do worker já existia devido a uma criação anterior corrompida.
-*   **Como corrigi:** Removi manualmente a pasta `.\VirtualBox VMs\vhl-worker` no host Windows.
+*   **Como corrigi:** Removi manualmente a pasta `.\VirtualBox VMs\k8s-worker` no host Windows.
 
 ### 4.6 Loop de reinício do MySQL no primeiro deploy
 *   **O que tentei fazer primeiro:** Configurei a liveness probe do MySQL para começar em 15 segundos.
@@ -223,7 +223,7 @@ Como o Zabbix Appliance não roda o daemon local do Zabbix Agent por padrão, o 
 ### Passo 6.3: Criar o Host da Aplicação Portal Web
 1. No menu **Configuration** ➡️ **Hosts**, clique no botão **Create host** (Criar host) no canto superior direito.
 2. Preencha os campos obrigatórios:
-   * **Host name:** `Portal Web VHL`
+   * **Host name:** `Portal Web App`
    * **Templates:** Clique em *Select* (Selecionar), procure e marque o template **`Template App HTTP Service`** (destacado na popup de templates) e clique em *Select*.
    * **Groups:** Clique em *Select*, marque o grupo **`Virtual machines`** e confirme.
    * **Interfaces:** Clique em *Add*, selecione *Agent* e configure com o IP padrão `127.0.0.1` na porta `10050`.
@@ -231,7 +231,7 @@ Como o Zabbix Appliance não roda o daemon local do Zabbix Agent por padrão, o 
 
 ### Passo 6.4: Criar o Cenário de Teste Web (Web Scenario)
 Dessa forma o Zabbix fará requisições HTTP reais de dentro do cluster simulando o usuário, testando o PHP e a conexão com o banco MySQL:
-1. Na lista de Hosts, na linha do host `Portal Web VHL`, clique em **Web** (Cenários Web).
+1. Na lista de Hosts, na linha do host `Portal Web App`, clique em **Web** (Cenários Web).
 2. Clique em **Create web scenario** (Criar cenário web) no canto superior direito.
 3. Na aba **Scenario**, configure:
    * **Name:** `Acesso Portal`
@@ -246,7 +246,7 @@ Dessa forma o Zabbix fará requisições HTTP reais de dentro do cluster simulan
 ### Passo 6.5: Visualizar Gráficos e Coleta de Métricas
 Para visualizar as métricas coletadas em tempo real:
 1. No menu superior horizontal, clique em **Monitoring** (Monitoramento) ➡️ **Web**.
-2. Clique no nome do cenário **`Portal Web VHL`**.
+2. Clique no nome do cenário **`Portal Web App`**.
 3. A tela exibirá a resposta HTTP `200 OK` e os gráficos de tempo de resposta e velocidade de download.
 
 ---

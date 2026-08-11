@@ -1,6 +1,6 @@
 # ==============================================================================
 # ZABBIX APPLIANCE - Monitoramento do Cluster K8s (Item Complementar)
-# Teste VHL Sistemas
+# Lab Kubernetes
 #
 # O Zabbix Appliance consolida o Zabbix Server, Frontend Web e banco de dados
 # em um único container leve, ideal para demonstrações e testes rápidos.

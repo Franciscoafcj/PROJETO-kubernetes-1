@@ -10,7 +10,7 @@ lint-yaml:
     - apk add --no-cache python3 py3-pip
     - pip3 install yamllint --break-system-packages
   script:
-    - 'yamllint -d "{rules: {line-length: disable, document-start: disable}}" TESTE-VHL-SISTEMAS/k8s/'
+    - 'yamllint -d "{rules: {line-length: disable, document-start: disable}}" LAB-KUBERNETES/k8s/'
 
 # Offline validation of Kubernetes manifests using kubeconform (no cluster needed)
 validate-k8s:
@@ -20,8 +20,8 @@ validate-k8s:
     - apk add --no-cache curl tar
     - curl -sL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar xz -C /usr/local/bin/
   script:
-    - kubeconform -summary -strict TESTE-VHL-SISTEMAS/k8s/secrets.yml
-    - kubeconform -summary -strict TESTE-VHL-SISTEMAS/k8s/volumes.yml
-    - kubeconform -summary -strict TESTE-VHL-SISTEMAS/k8s/mysql.yml
-    - kubeconform -summary -strict TESTE-VHL-SISTEMAS/k8s/app.yml
-    - kubeconform -summary -strict TESTE-VHL-SISTEMAS/k8s/monitoring/zabbix.yml
+    - kubeconform -summary -strict LAB-KUBERNETES/k8s/secrets.yml
+    - kubeconform -summary -strict LAB-KUBERNETES/k8s/volumes.yml
+    - kubeconform -summary -strict LAB-KUBERNETES/k8s/mysql.yml
+    - kubeconform -summary -strict LAB-KUBERNETES/k8s/app.yml
+    - kubeconform -summary -strict LAB-KUBERNETES/k8s/monitoring/zabbix.yml

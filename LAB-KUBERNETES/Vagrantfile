@@ -2,7 +2,7 @@
 # vi: set ft=ruby :
 # ==============================================================================
 # VAGRANTFILE - Cluster Kubernetes Local com K3s (2 VMs)
-# Teste VHL Sistemas
+# Lab Kubernetes
 # ==============================================================================
 
 MASTER_IP = "192.168.56.10"
@@ -103,12 +103,12 @@ Vagrant.configure("2") do |config|
   config.vm.boot_timeout = 600
 
   # VM 1: MASTER
-  config.vm.define "vhl-master" do |master|
-    master.vm.hostname = "vhl-master"
+  config.vm.define "k8s-master" do |master|
+    master.vm.hostname = "k8s-master"
     master.vm.network "private_network", ip: MASTER_IP
 
     master.vm.provider "virtualbox" do |vb|
-      vb.name = "vhl-master"
+      vb.name = "k8s-master"
       vb.memory = VM_MEMORY
       vb.cpus = VM_CPUS
       # Mostra a interface gráfica da VM para diagnosticar problemas de boot
@@ -119,12 +119,12 @@ Vagrant.configure("2") do |config|
   end
 
   # VM 2: WORKER
-  config.vm.define "vhl-worker" do |worker|
-    worker.vm.hostname = "vhl-worker"
+  config.vm.define "k8s-worker" do |worker|
+    worker.vm.hostname = "k8s-worker"
     worker.vm.network "private_network", ip: WORKER_IP
 
     worker.vm.provider "virtualbox" do |vb|
-      vb.name = "vhl-worker"
+      vb.name = "k8s-worker"
       vb.memory = VM_MEMORY
       vb.cpus = VM_CPUS
       vb.gui = true

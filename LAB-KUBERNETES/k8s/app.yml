@@ -1,6 +1,6 @@
 # ==============================================================================
 # DEPLOYMENT & SERVICE - Aplicação PHP (Frontend + Backend)
-# Teste VHL Sistemas
+# Lab Kubernetes
 #
 # Estratégia: Usamos a imagem chialab/php:8.1-apache e injetamos o código
 # via ConfigMap. Assim não precisamos de initContainer para instalar a extensão
@@ -87,7 +87,7 @@ data:
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Portal de Feedback - VHL Sistemas</title>
+        <title>Portal de Feedback</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
@@ -100,7 +100,7 @@ data:
         <div class="container">
             <header>
                 <div class="logo"><span>&#9784;</span><h1>Portal de Feedback</h1></div>
-                <p class="subtitle">Cluster Kubernetes Local - Teste VHL Sistemas</p>
+                <p class="subtitle">Cluster Kubernetes Local</p>
             </header>
             <main class="grid">
                 <section class="card">
@@ -117,7 +117,7 @@ data:
                     <div class="comments" id="list"><div class="loading"><div class="spinner"></div><p>Carregando...</p></div></div>
                 </section>
             </main>
-            <footer><p>&copy; 2026 - Teste Tecnico DevOps - VHL Sistemas</p></footer>
+            <footer><p>&copy; 2026 - Desafio Tecnico DevOps</p></footer>
         </div>
         <script>
         const API = window.location.origin + '/index.php';

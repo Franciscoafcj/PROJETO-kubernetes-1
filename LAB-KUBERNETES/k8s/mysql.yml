@@ -1,6 +1,6 @@
 # ==============================================================================
 # DEPLOYMENT & SERVICE - Banco de Dados MySQL
-# Teste VHL Sistemas
+# Lab Kubernetes
 # ==============================================================================
 apiVersion: apps/v1
 kind: Deployment
